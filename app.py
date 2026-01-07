@@ -70,7 +70,8 @@ html, body, [class*="css"]  {
 # ============================
 # Hugging Face Config
 # ============================
-API_URL = "https://router.huggingface.co/api/models/AnasAlokla/multilingual_go_emotions"
+API_URL ="https://router.huggingface.co/api/models/AnasAlokla/multilingual_go_emotions_V1.2"
+
 HF_TOKEN = st.secrets.get("HF_TOKEN", None) or os.getenv("HF_TOKEN", None)
 HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else None
 
