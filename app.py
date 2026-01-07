@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # ============================
-# Custom Dark UI + Animations
+# Custom Dark UI + Responsive CSS
 # ============================
 st.markdown("""
 <style>
@@ -48,14 +48,6 @@ html, body, [class*="css"] {
     color: #94a3b8;
     margin-bottom: 1.5rem;
     animation: fadeIn 1.2s ease-in-out;
-}
-
-/* Particle Background */
-#particles-js {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
 }
 
 /* Card */
@@ -95,26 +87,13 @@ html, body, [class*="css"] {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse { 0% { text-shadow: 0 0 10px #22c55e; } 50% { text-shadow: 0 0 25px #38bdf8; } 100% { text-shadow: 0 0 10px #22c55e; } }
 
-/* Responsive */
+/* Responsive Fonts */
 @media (max-width: 600px) {
     .title { font-size: 2rem; }
     .subtitle { font-size: 1rem; }
     .primary { font-size: 1.1rem; }
 }
 </style>
-
-<div id="particles-js"></div>
-<script src="https://cdn.jsdelivr.net/npm/particles.js"></script>
-<script>
-particlesJS("particles-js", {
-  "particles": {
-    "number": {"value": 60},
-    "size": {"value": 3},
-    "move": {"speed": 2},
-    "line_linked": {"enable": true, "distance": 150}
-  }
-});
-</script>
 """, unsafe_allow_html=True)
 
 # ============================
@@ -135,7 +114,7 @@ def load_model():
 tokenizer, model = load_model()
 
 # ============================
-# Analyze Emotion
+# Analyze Emotion Function
 # ============================
 def analyze_emotion(text):
     inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
@@ -147,34 +126,24 @@ def analyze_emotion(text):
     return emotions[:5]
 
 # ============================
-# Persistent Input
+# Form-based Input (Mobile-friendly)
 # ============================
-if "user_input" not in st.session_state:
-    st.session_state.user_input = ""
+with st.form(key="emotion_form"):
+    user_text = st.text_area("Paste a comment (any language)", height=160, placeholder="Type your text here...")
+    submitted = st.form_submit_button("✨ Analyze Emotion")
 
-text = st.text_area(
-    "Paste a comment (any language)",
-    height=160,
-    value=st.session_state.user_input,
-    placeholder="Type your text here..."
-)
-st.session_state.user_input = text
-
-# ============================
-# Button & Analysis
-# ============================
-if st.button("✨ Analyze Emotion"):
-    if not text.strip():
+if submitted:
+    if not user_text.strip():
         st.warning("Please enter some text to analyze.")
     else:
         try:
-            lang = detect(text)
+            lang = detect(user_text)
         except:
             lang = "unknown"
         st.markdown(f"**Detected Language:** `{lang.upper()}`")
 
         with st.spinner("🧠 Analyzing emotions..."):
-            emotions = analyze_emotion(text)
+            emotions = analyze_emotion(user_text)
 
         # ============================
         # Emotion Card
@@ -188,7 +157,6 @@ if st.button("✨ Analyze Emotion"):
         }
         emoji_map = {"joy":"😊","anger":"😡","sadness":"😢","fear":"😨","love":"❤️","neutral":"😐"}
 
-        # Progress bars + labels
         for label, score in emotions:
             percent = round(score * 100, 2)
             color = emotion_colors.get(label.lower(), "#22c55e")
@@ -213,12 +181,12 @@ if st.button("✨ Analyze Emotion"):
         # ============================
         df = pd.DataFrame(emotions, columns=["Emotion","Score"])
         fig = px.line(
-            df, 
-            x="Emotion", 
-            y="Score", 
-            markers=True, 
+            df,
+            x="Emotion",
+            y="Score",
+            markers=True,
             line_shape="spline",
-            color="Emotion", 
+            color="Emotion",
             color_discrete_map=emotion_colors
         )
         fig.update_layout(
