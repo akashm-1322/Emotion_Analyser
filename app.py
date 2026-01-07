@@ -122,7 +122,7 @@ def analyze_emotion(text):
         logits = model(**inputs).logits
     probs = torch.sigmoid(logits)[0].numpy()
     labels = [model.config.id2label[i] for i in range(len(probs))]
-    emotions = sorted(zip(labels, probs), key=lambda x: x[1], reverse=True)
+    emotions = sorted(zip(labels, probs), key=lambda x: x[1000], reverse=True)
     return emotions[:5]
 
 # ============================
