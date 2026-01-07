@@ -4,7 +4,6 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import plotly.express as px
 import pandas as pd
-import random
 
 # ============================
 # Page Config
@@ -64,7 +63,9 @@ html, body, [class*="css"] {
     background: linear-gradient(145deg, #020617, #0c122b); 
     border-radius: 20px; 
     padding: 1.5rem; 
-    margin-top: 1rem; 
+    margin: 1rem auto; 
+    width: 90%;
+    max-width: 700px;
     box-shadow: 0 15px 35px rgba(0,0,0,0.45); 
     transition: transform 0.3s ease; 
 }
@@ -93,6 +94,13 @@ html, body, [class*="css"] {
 @keyframes grow { from { width: 0%; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse { 0% { text-shadow: 0 0 10px #22c55e; } 50% { text-shadow: 0 0 25px #38bdf8; } 100% { text-shadow: 0 0 10px #22c55e; } }
+
+/* Responsive */
+@media (max-width: 600px) {
+    .title { font-size: 2rem; }
+    .subtitle { font-size: 1rem; }
+    .primary { font-size: 1.1rem; }
+}
 </style>
 
 <div id="particles-js"></div>
@@ -139,20 +147,22 @@ def analyze_emotion(text):
     return emotions[:5]
 
 # ============================
-# Multilingual Example Texts
+# Persistent Input
 # ============================
-example_texts = [
-    "I feel happy today! 😊",
-    "Je me sens triste aujourd'hui",
-    "Me siento emocionado"
-]
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ""
 
 text = st.text_area(
     "Paste a comment (any language)",
     height=160,
-    placeholder=random.choice(example_texts)
+    value=st.session_state.user_input,
+    placeholder="Type your text here..."
 )
+st.session_state.user_input = text
 
+# ============================
+# Button & Analysis
+# ============================
 if st.button("✨ Analyze Emotion"):
     if not text.strip():
         st.warning("Please enter some text to analyze.")
@@ -166,23 +176,27 @@ if st.button("✨ Analyze Emotion"):
         with st.spinner("🧠 Analyzing emotions..."):
             emotions = analyze_emotion(text)
 
+        # ============================
         # Emotion Card
+        # ============================
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.subheader("🎭 Top Emotions")
+
         emotion_colors = {
             "joy": "#facc15", "anger": "#ef4444", "sadness": "#3b82f6",
             "fear": "#8b5cf6", "love": "#ec4899", "neutral": "#94a3b8"
         }
+        emoji_map = {"joy":"😊","anger":"😡","sadness":"😢","fear":"😨","love":"❤️","neutral":"😐"}
 
+        # Progress bars + labels
         for label, score in emotions:
             percent = round(score * 100, 2)
             color = emotion_colors.get(label.lower(), "#22c55e")
-            emoji_map = {"joy":"😊","anger":"😡","sadness":"😢","fear":"😨","love":"❤️","neutral":"😐"}
             st.markdown(
                 f"""
                 <div class="emotion">
                     <span>{emoji_map.get(label.lower(),'✨')} {label}</span>
-                    <span>{percent}%</span>
+                    <span>{percent:.2f}%</span>
                 </div>
                 <div class="progress">
                     <span style="width:{percent}%; background:{color};"></span>
@@ -192,13 +206,32 @@ if st.button("✨ Analyze Emotion"):
             )
 
         primary_label, primary_score = emotions[0]
-        st.markdown(f'<div class="primary">✨ Primary Emotion: {emoji_map.get(primary_label.lower(),"✨")} {primary_label} ({round(primary_score*100,2)}%)</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="primary">✨ Primary Emotion: {emoji_map.get(primary_label.lower(),"✨")} {primary_label} ({primary_score*100:.2f}%)</div>', unsafe_allow_html=True)
 
-        # Emotion Distribution Chart
+        # ============================
+        # Line Chart
+        # ============================
         df = pd.DataFrame(emotions, columns=["Emotion","Score"])
-        fig = px.bar(df, x="Emotion", y="Score", color="Emotion", color_discrete_map=emotion_colors)
-        fig.update_layout(height=300, showlegend=False, plot_bgcolor="#0f172a", paper_bgcolor="#0f172a", font_color="#e5e7eb")
-        st.plotly_chart(fig)
+        fig = px.line(
+            df, 
+            x="Emotion", 
+            y="Score", 
+            markers=True, 
+            line_shape="spline",
+            color="Emotion", 
+            color_discrete_map=emotion_colors
+        )
+        fig.update_layout(
+            height=300,
+            showlegend=False,
+            plot_bgcolor="#0f172a",
+            paper_bgcolor="#0f172a",
+            font_color="#e5e7eb",
+            xaxis_title="Emotion",
+            yaxis_title="Probability",
+            yaxis=dict(range=[0,1])
+        )
+        st.plotly_chart(fig, use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================
