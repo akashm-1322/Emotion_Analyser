@@ -78,7 +78,7 @@ HEADERS = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else None
 # Function to analyze emotion (cached to avoid repeated API calls)
 # ============================
 @st.cache_data(show_spinner=False)
-def analyze_emotion(text: str):
+def analyze_emotion(text):
     try:
         response = requests.post(
             API_URL,
@@ -86,12 +86,19 @@ def analyze_emotion(text: str):
             json={"inputs": text},
             timeout=20
         )
-        result = response.json()
-        if isinstance(result, dict) and "error" in result:
-            return {"error": result["error"]}
-        return result
+        if response.status_code != 200:
+            return {"error": f"API returned status {response.status_code}: {response.text}"}
+
+        # Safely parse JSON
+        try:
+            result = response.json()
+            return result
+        except ValueError:
+            return {"error": "Received empty or invalid JSON from Hugging Face API."}
+
     except requests.exceptions.RequestException as e:
-        return {"error": str(e)}
+        return {"error": f"Request failed: {str(e)}"}
+
 
 # ============================
 # UI
