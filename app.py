@@ -26,7 +26,6 @@ html, body, [class*="css"] {
     scroll-behavior: smooth;
 }
 
-/* Hero Title */
 .title {
     text-align: center;
     font-size: 3rem;
@@ -50,7 +49,6 @@ html, body, [class*="css"] {
     animation: fadeIn 1.2s ease-in-out;
 }
 
-/* Card */
 .card { 
     background: linear-gradient(145deg, #020617, #0c122b); 
     border-radius: 20px; 
@@ -63,7 +61,6 @@ html, body, [class*="css"] {
 }
 .card:hover { transform: translateY(-5px); }
 
-/* Emotion Row */
 .emotion { 
     display: flex; 
     justify-content: space-between; 
@@ -75,19 +72,15 @@ html, body, [class*="css"] {
 }
 .emotion:hover { background: rgba(56, 189, 248, 0.1); }
 
-/* Progress Bar */
 .progress { height: 12px; border-radius: 20px; background: #1e293b; overflow: hidden; margin-bottom: 0.8rem; }
 .progress span { display: block; height: 100%; background: linear-gradient(90deg, #38bdf8, #22c55e); animation: grow 1.5s ease forwards; }
 
-/* Primary Emotion */
 .primary { font-size: 1.4rem; font-weight: 700; text-align: center; text-shadow: 0 0 15px #38bdf8; margin-top: 1rem; animation: pulse 2s infinite; }
 
-/* Animations */
 @keyframes grow { from { width: 0%; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes pulse { 0% { text-shadow: 0 0 10px #22c55e; } 50% { text-shadow: 0 0 25px #38bdf8; } 100% { text-shadow: 0 0 10px #22c55e; } }
 
-/* Responsive Fonts */
 @media (max-width: 600px) {
     .title { font-size: 2rem; }
     .subtitle { font-size: 1rem; }
@@ -126,41 +119,38 @@ def analyze_emotion(text):
     return emotions[:5]
 
 # ============================
-# Initialize session state (fix mobile text disappearing)
+# Initialize session state for input and submit
 # ============================
 if "user_text" not in st.session_state:
     st.session_state.user_text = ""
 
 # ============================
-# Form-based Input (Mobile-friendly)
+# Input + Button (works on all devices)
 # ============================
-with st.form(key="emotion_form"):
-    user_text = st.text_area(
-        "Paste a comment (any language)",
-        height=160,
-        placeholder="Type your text here...",
-        value=st.session_state.user_text  # Persist previous input
-    )
-    submitted = st.form_submit_button("✨ Analyze Emotion")
+st.session_state.user_text = st.text_area(
+    "Paste a comment (any language)",
+    height=160,
+    value=st.session_state.user_text,
+    placeholder="Type your text here..."
+)
 
-# Save the latest input
-st.session_state.user_text = user_text
+analyze_clicked = st.button("✨ Analyze Emotion")
 
 # ============================
 # Analysis Logic
 # ============================
-if submitted:
-    if not user_text.strip():
+if analyze_clicked:
+    if not st.session_state.user_text.strip():
         st.warning("Please enter some text to analyze.")
     else:
         try:
-            lang = detect(user_text)
+            lang = detect(st.session_state.user_text)
         except:
             lang = "unknown"
         st.markdown(f"**Detected Language:** `{lang.upper()}`")
 
         with st.spinner("🧠 Analyzing emotions..."):
-            emotions = analyze_emotion(user_text)
+            emotions = analyze_emotion(st.session_state.user_text)
 
         # ============================
         # Emotion Card
