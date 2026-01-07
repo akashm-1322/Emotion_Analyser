@@ -126,26 +126,29 @@ def analyze_emotion(text):
     return emotions[:5]
 
 # ============================
-# Form-based Input (Mobile-friendly)
+# Initialize session state (fix mobile text disappearing)
 # ============================
-
-# Initialize session state
 if "user_text" not in st.session_state:
     st.session_state.user_text = ""
 
+# ============================
+# Form-based Input (Mobile-friendly)
+# ============================
 with st.form(key="emotion_form"):
-    # Bind text_area to session state
     user_text = st.text_area(
         "Paste a comment (any language)",
         height=160,
         placeholder="Type your text here...",
-        value=st.session_state.user_text
+        value=st.session_state.user_text  # Persist previous input
     )
     submitted = st.form_submit_button("✨ Analyze Emotion")
 
-# Update session state after form input
+# Save the latest input
 st.session_state.user_text = user_text
 
+# ============================
+# Analysis Logic
+# ============================
 if submitted:
     if not user_text.strip():
         st.warning("Please enter some text to analyze.")
