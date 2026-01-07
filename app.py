@@ -122,15 +122,29 @@ def analyze_emotion(text):
         logits = model(**inputs).logits
     probs = torch.sigmoid(logits)[0].numpy()
     labels = [model.config.id2label[i] for i in range(len(probs))]
-    emotions = sorted(zip(labels, probs), key=lambda x: x[1000], reverse=True)
+    emotions = sorted(zip(labels, probs), key=lambda x: x[1], reverse=True)
     return emotions[:5]
 
 # ============================
 # Form-based Input (Mobile-friendly)
 # ============================
+
+# Initialize session state
+if "user_text" not in st.session_state:
+    st.session_state.user_text = ""
+
 with st.form(key="emotion_form"):
-    user_text = st.text_area("Paste a comment (any language)", height=160, placeholder="Type your text here...")
+    # Bind text_area to session state
+    user_text = st.text_area(
+        "Paste a comment (any language)",
+        height=160,
+        placeholder="Type your text here...",
+        value=st.session_state.user_text
+    )
     submitted = st.form_submit_button("✨ Analyze Emotion")
+
+# Update session state after form input
+st.session_state.user_text = user_text
 
 if submitted:
     if not user_text.strip():
