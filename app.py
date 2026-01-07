@@ -1,94 +1,64 @@
 import streamlit as st
-from transformers import pipeline
+import requests
 from langdetect import detect
 
 # ----------------------------
-# Load LLM Emotion Model
+# Hugging Face Inference API
 # ----------------------------
-@st.cache_resource
-def load_emotion_model():
-    return pipeline(
-        task="text-classification",
-        model="cardiffnlp/twitter-xlm-roberta-base-emotion",
-        top_k=5,
-        truncation=True
+API_URL = "https://api-inference.huggingface.co/models/joeddav/xlm-roberta-large-xnli-go-emotions"
+HF_TOKEN = st.secrets["HF_TOKEN"]
+
+headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+
+def analyze_emotion(text):
+    response = requests.post(
+        API_URL,
+        headers=headers,
+        json={"inputs": text}
     )
-
-emotion_classifier = load_emotion_model()
+    return response.json()
 
 # ----------------------------
-# UI CONFIG
+# UI
 # ----------------------------
 st.set_page_config(
     page_title="Multilingual Emotion Analyzer (LLM)",
-    page_icon="🌍",
-    layout="centered"
+    page_icon="🌍"
 )
 
 st.title("🌍 Multilingual Emotion Analyzer using LLM")
-st.write(
-    "Analyze comments in **any language** (Tamil, Telugu, Spanish, French, German, English, etc.) "
-    "and detect **complex human emotions** using a large multilingual language model."
-)
 
 text = st.text_area(
     "Paste a comment (any language)",
-    height=160,
-    placeholder="உங்கள் கருத்தை இங்கே எழுதுங்கள் / Escribe aquí / Write here..."
+    height=150
 )
 
 if st.button("Analyze Emotion"):
     if not text.strip():
-        st.warning("Please enter some text")
+        st.warning("Please enter text")
     else:
-        # ----------------------------
-        # Language Detection
-        # ----------------------------
+        # Language detection
         try:
-            language = detect(text)
+            lang = detect(text)
         except:
-            language = "Unknown"
+            lang = "unknown"
 
-        st.subheader("🌐 Detected Language")
-        st.write(language.upper())
+        st.write("**Detected Language:**", lang.upper())
 
-        # ----------------------------
-        # Emotion Prediction
-        # ----------------------------
-        results = emotion_classifier(text)[0]
+        with st.spinner("Analyzing emotions using LLM..."):
+            result = analyze_emotion(text)
 
-        st.subheader("🎭 Detected Emotions (Top 5)")
-        for emo in results:
-            st.write(
-                f"**{emo['label'].capitalize()}** — {round(emo['score']*100, 2)}%"
-            )
-            st.progress(emo["score"])
-
-        # ----------------------------
-        # Primary Emotion Logic
-        # ----------------------------
-        primary_emotion = results[0]["label"]
-        confidence = round(results[0]["score"] * 100, 2)
-
-        st.subheader("🧠 Primary Emotion")
-        st.success(f"{primary_emotion.capitalize()} ({confidence}%)")
-
-        # ----------------------------
-        # Ethical Insight
-        # ----------------------------
-        st.subheader("⚖️ Emotional Insight")
-        if primary_emotion in ["anger", "disgust", "sadness", "fear", "remorse"]:
-            st.error(
-                "This content reflects strong negative emotions. "
-                "Consider responding with empathy and care."
-            )
-        elif primary_emotion in ["joy", "love", "gratitude", "optimism"]:
-            st.info(
-                "This content expresses positive emotions. "
-                "It can encourage healthy interactions."
-            )
+        if isinstance(result, dict) and "error" in result:
+            st.error(result["error"])
         else:
-            st.warning(
-                "This content reflects a mixed or neutral emotional state."
+            emotions = result[0][:5]
+
+            st.subheader("🎭 Detected Emotions")
+            for emo in emotions:
+                st.write(f"**{emo['label']}** — {round(emo['score']*100,2)}%")
+                st.progress(emo["score"])
+
+            primary = emotions[0]
+            st.success(
+                f"Primary Emotion: {primary['label']} ({round(primary['score']*100,2)}%)"
             )
-        st.markdown("---")
