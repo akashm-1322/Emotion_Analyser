@@ -8,9 +8,10 @@ from langdetect import detect
 @st.cache_resource
 def load_emotion_model():
     return pipeline(
-        "text-classification",
-        model="joeddav/xlm-roberta-large-xnli-go-emotions",
-        top_k=5
+        task="text-classification",
+        model="cardiffnlp/twitter-xlm-roberta-base-emotion",
+        top_k=5,
+        truncation=True
     )
 
 emotion_classifier = load_emotion_model()
